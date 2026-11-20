@@ -1,0 +1,6 @@
+{
+  "appId": "de.azizelkateb.coachtennis",
+  "appName": "Coach Tennis",
+  "webDir": "www",
+  "ios": { "contentInset": "always" }
+}
