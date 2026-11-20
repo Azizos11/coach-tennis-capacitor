@@ -1,0 +1,54 @@
+name: Build iOS IPA (unsigned)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Add + sync iOS platform
+        run: |
+          npx cap add ios || true
+          npx cap sync ios
+
+      - name: Build unsigned .app
+        run: |
+          cd ios/App
+          pod install
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            clean build
+
+      - name: Package into .ipa
+        run: |
+          cd ios/App/build/Build/Products/Release-iphoneos
+          mkdir -p Payload
+          cp -R App.app Payload/App.app
+          zip -r CoachTennis.ipa Payload >/dev/null
+          echo "IPA created:" && ls -la CoachTennis.ipa
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CoachTennis-ipa
+          path: ios/App/build/Build/Products/Release-iphoneos/CoachTennis.ipa
+          if-no-files-found: error
